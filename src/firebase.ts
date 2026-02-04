@@ -2,16 +2,19 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// REPLACE WITH YOUR ACTUAL FIREBASE CONFIGURATION
+console.log("Minha Chave:", import.meta.env.VITE_API_KEY);
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyDummyKey",
-  authDomain: "dummy-project.firebaseapp.com",
-  projectId: "dummy-project",
-  storageBucket: "dummy-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID
 };
 
+// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
+
+// Exporta os serviços para usar no resto do app
 export const auth = getAuth(app);
 export const db = getFirestore(app);
