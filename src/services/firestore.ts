@@ -86,8 +86,10 @@ export const saveBudget = async (budget: Budget) => {
     return id;
   } else {
     // Create
+    // IMPORTANTE: Removemos o 'id' (que é undefined) do objeto antes de salvar
+    const { id, ...data } = budget;
     const docRef = await addDoc(collection(db, COLLECTIONS.BUDGETS), {
-      ...budget,
+      ...data,
       createdAt: Date.now()
     });
     return docRef.id;
