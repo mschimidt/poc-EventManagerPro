@@ -17,7 +17,9 @@ export const Costs: React.FC = () => {
   const [settings, setSettings] = useState<SystemSettings>({ occupancyRate: 70, workingDaysPerMonth: 22 });
   
   // Forms state
-  const [newFixed, setNewFixed] = useState({ name: '', amount: '' });
+  // Inicializa com o mês atual no formato YYYY-MM
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [newFixed, setNewFixed] = useState({ name: '', amount: '', monthYear: currentMonth });
   const [newVariable, setNewVariable] = useState({ name: '', cost: '', price: '' });
 
   useEffect(() => {
@@ -26,15 +28,27 @@ export const Costs: React.FC = () => {
 
   const loadData = async () => {
     const [fc, vi, st] = await Promise.all([getFixedCosts(), getVariableItems(), getSettings()]);
-    setFixedCosts(fc);
+    // Opcional: Ordenar custos fixos por data (mais recente primeiro)
+    const sortedFc = fc.sort((a, b) => {
+      if (a.monthYear && b.monthYear) return b.monthYear.localeCompare(a.monthYear);
+      return 0;
+    });
+    setFixedCosts(sortedFc);
     setVariableItems(vi);
     setSettings(st);
   };
 
   const handleAddFixed = async () => {
     if (!newFixed.name || !newFixed.amount) return;
-    await addFixedCost({ name: newFixed.name, amount: Number(newFixed.amount) });
-    setNewFixed({ name: '', amount: '' });
+    
+    await addFixedCost({ 
+      name: newFixed.name, 
+      amount: Number(newFixed.amount),
+      monthYear: newFixed.monthYear 
+    });
+    
+    // Mantém o mês selecionado para facilitar lançamentos em lote, limpa apenas nome e valor
+    setNewFixed(prev => ({ ...prev, name: '', amount: '' }));
     loadData();
   };
 
@@ -52,6 +66,13 @@ export const Costs: React.FC = () => {
   const handleSaveSettings = async () => {
     await saveSettings(settings);
     alert('Configurações salvas!');
+  };
+
+  // Helper para formatar YYYY-MM para MM/YYYY
+  const formatMonthYear = (val?: string) => {
+    if (!val) return 'Recorrente';
+    const [year, month] = val.split('-');
+    return `${month}/${year}`;
   };
 
   return (
@@ -83,12 +104,19 @@ export const Costs: React.FC = () => {
       <Card>
         <CardHeader title="Custos Fixos Mensais" />
         <CardContent>
-          <div className="flex gap-4 mb-4 items-end">
+          <div className="flex gap-4 mb-4 items-end flex-wrap md:flex-nowrap">
+            <Input 
+              label="Mês/Ano" 
+              type="month"
+              value={newFixed.monthYear} 
+              onChange={e => setNewFixed({...newFixed, monthYear: e.target.value})}
+              className="w-40"
+            />
             <Input 
               label="Nome do Custo (ex: Aluguel)" 
               value={newFixed.name} 
               onChange={e => setNewFixed({...newFixed, name: e.target.value})}
-              className="flex-1"
+              className="flex-1 min-w-[200px]"
             />
             <Input 
               label="Valor (R$)" 
@@ -104,6 +132,7 @@ export const Costs: React.FC = () => {
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Período</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Nome</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Valor</th>
                   <th className="px-6 py-3 text-right">Ações</th>
@@ -112,6 +141,7 @@ export const Costs: React.FC = () => {
               <tbody className="bg-white divide-y divide-slate-200">
                 {fixedCosts.map(fc => (
                   <tr key={fc.id}>
+                    <td className="px-6 py-4 text-sm text-slate-500 font-medium">{formatMonthYear(fc.monthYear)}</td>
                     <td className="px-6 py-4 text-sm text-slate-900">{fc.name}</td>
                     <td className="px-6 py-4 text-sm text-slate-900">{formatCurrency(fc.amount)}</td>
                     <td className="px-6 py-4 text-right">
@@ -123,6 +153,7 @@ export const Costs: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            {fixedCosts.length === 0 && <p className="text-center py-4 text-slate-500">Nenhum custo cadastrado.</p>}
           </div>
         </CardContent>
       </Card>

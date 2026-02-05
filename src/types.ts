@@ -1,7 +1,9 @@
+
 export interface FixedCost {
   id?: string;
   name: string;
   amount: number;
+  monthYear?: string; // Format: YYYY-MM
 }
 
 export interface VariableCostItem {
