@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getBudgets, getFixedCosts } from '../services/firestore';
+// FIX: Changed getFixedCosts to getCosts as it's not exported from firestore service.
+import { getBudgets, getCosts } from '../services/firestore';
 import { Budget, BudgetStatus } from '../types';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { formatCurrency, formatPercent } from '../utils/format';
@@ -21,9 +22,11 @@ export const Reports: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [bData, fcData] = await Promise.all([getBudgets(), getFixedCosts()]);
+      // FIX: Used getCosts and filtered locally for fixed costs.
+      const [bData, allCosts] = await Promise.all([getBudgets(), getCosts()]);
+      const fixedCosts = allCosts.filter(cost => cost.type === 'fixed');
       setBudgets(bData);
-      setFixedCostTotal(fcData.reduce((acc, curr) => acc + curr.amount, 0));
+      setFixedCostTotal(fixedCosts.reduce((acc, curr) => acc + curr.amount, 0));
     };
     fetchData();
   }, []);

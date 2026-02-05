@@ -6,17 +6,14 @@ import {
   doc, 
   deleteDoc, 
   query, 
-  where, 
   getDoc,
-  setDoc,
-  Timestamp
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { FixedCost, SystemSettings, Budget } from "../types";
+import { Cost, SystemSettings, Budget } from "../types";
 
 // Collections
 const COLLECTIONS = {
-  FIXED_COSTS: 'fixed_costs',
+  COSTS: 'costs',
   SETTINGS: 'settings',
   BUDGETS: 'budgets'
 };
@@ -25,7 +22,6 @@ const COLLECTIONS = {
 export const getSettings = async (): Promise<SystemSettings> => {
   const querySnapshot = await getDocs(collection(db, COLLECTIONS.SETTINGS));
   if (querySnapshot.empty) {
-    // Return default if not exists
     return { occupancyRate: 70, workingDaysPerMonth: 22 }; 
   }
   const data = querySnapshot.docs[0].data();
@@ -42,36 +38,33 @@ export const saveSettings = async (settings: SystemSettings) => {
   }
 };
 
-// --- Fixed Costs ---
-export const getFixedCosts = async (): Promise<FixedCost[]> => {
-  const snapshot = await getDocs(collection(db, COLLECTIONS.FIXED_COSTS));
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FixedCost));
+// --- Costs (Fixed and Variable) ---
+export const getCosts = async (): Promise<Cost[]> => {
+  const snapshot = await getDocs(collection(db, COLLECTIONS.COSTS));
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Cost));
 };
 
-export const addFixedCost = async (cost: FixedCost) => {
-  await addDoc(collection(db, COLLECTIONS.FIXED_COSTS), cost);
+export const addCost = async (cost: Cost) => {
+  await addDoc(collection(db, COLLECTIONS.COSTS), cost);
 };
 
-export const deleteFixedCost = async (id: string) => {
-  await deleteDoc(doc(db, COLLECTIONS.FIXED_COSTS, id));
+export const deleteCost = async (id: string) => {
+  await deleteDoc(doc(db, COLLECTIONS.COSTS, id));
 };
 
 // --- Budgets ---
 export const getBudgets = async (): Promise<Budget[]> => {
-  const q = query(collection(db, COLLECTIONS.BUDGETS)); // Can add ordering here
+  const q = query(collection(db, COLLECTIONS.BUDGETS));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Budget));
 };
 
 export const saveBudget = async (budget: Budget) => {
   if (budget.id) {
-    // Update
     const { id, ...data } = budget;
     await updateDoc(doc(db, COLLECTIONS.BUDGETS, id), data);
     return id;
   } else {
-    // Create
-    // IMPORTANTE: Removemos o 'id' (que é undefined) do objeto antes de salvar
     const { id, ...data } = budget;
     const docRef = await addDoc(collection(db, COLLECTIONS.BUDGETS), {
       ...data,
