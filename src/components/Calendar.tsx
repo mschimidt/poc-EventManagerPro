@@ -1,7 +1,6 @@
-import React, 'react';
+import React, { useState } from 'react';
 import { Budget, BudgetStatus } from '../types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
 
 interface CalendarProps {
   events: Budget[];
