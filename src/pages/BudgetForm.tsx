@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { 
   getSettings, getFixedCosts, getVariableItems, saveBudget, getBudgetById 
 } from '../services/firestore';
-import { Budget, BudgetItem, BudgetStatus, VariableCostItem } from '../types';
+import { Budget, BudgetItem, BudgetStatus, VariableCostItem, FixedCost } from '../types';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -20,12 +20,13 @@ export const BudgetForm: React.FC = () => {
   const [clientPhone, setClientPhone] = useState('');
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [guestCount, setGuestCount] = useState<string>(''); // Managed as string for input, converted to number
   const [status, setStatus] = useState<BudgetStatus>(BudgetStatus.DRAFT);
   const [items, setItems] = useState<BudgetItem[]>([]);
 
   // System Data for Calculation
   const [catalog, setCatalog] = useState<VariableCostItem[]>([]);
-  const [fixedCostsSum, setFixedCostsSum] = useState(0);
+  const [allFixedCosts, setAllFixedCosts] = useState<FixedCost[]>([]);
   const [settings, setSettings] = useState({ occupancyRate: 70, workingDaysPerMonth: 22 });
 
   // Calculation Results
@@ -34,7 +35,8 @@ export const BudgetForm: React.FC = () => {
     totalVariable: 0,
     totalSales: 0,
     netProfit: 0,
-    margin: 0
+    margin: 0,
+    relevantFixedSum: 0 // To display which sum was used
   });
 
   useEffect(() => {
@@ -46,8 +48,7 @@ export const BudgetForm: React.FC = () => {
         getSettings()
       ]);
 
-      const sumFixed = allFixed.reduce((acc, curr) => acc + curr.amount, 0);
-      setFixedCostsSum(sumFixed);
+      setAllFixedCosts(allFixed);
       setCatalog(allCatalog);
       setSettings(sysSettings);
 
@@ -59,6 +60,7 @@ export const BudgetForm: React.FC = () => {
           setClientPhone(existing.clientPhone);
           setEventName(existing.eventName);
           setEventDate(existing.eventDate);
+          setGuestCount(existing.guestCount ? String(existing.guestCount) : '');
           setStatus(existing.status);
           setItems(existing.items);
         }
@@ -68,12 +70,33 @@ export const BudgetForm: React.FC = () => {
     init();
   }, [id]);
 
-  // Recalculate whenever items or system settings change
+  // Recalculate whenever items, settings, or the event DATE changes
   useEffect(() => {
+    // 0. Determine Relevant Fixed Costs
+    // Filter costs that match the event Month/Year OR have no date (recurring)
+    let sumRelevantFixed = 0;
+    
+    if (eventDate) {
+      const eventYearMonth = eventDate.substring(0, 7); // "YYYY-MM"
+      
+      const relevantCosts = allFixedCosts.filter(fc => {
+        // If cost has no specific date, it's recurring (applies to all months)
+        if (!fc.monthYear) return true;
+        // Otherwise, must match the event month
+        return fc.monthYear === eventYearMonth;
+      });
+      
+      sumRelevantFixed = relevantCosts.reduce((acc, curr) => acc + curr.amount, 0);
+    } else {
+      // Default fallback: sum of recurring only if no date selected yet? 
+      // Or sum of everything? Let's use recurring only as baseline.
+      sumRelevantFixed = allFixedCosts.filter(fc => !fc.monthYear).reduce((acc, curr) => acc + curr.amount, 0);
+    }
+
     // 1. Calculate Overhead Share
-    // Formula: Total Fixed / (Days * (Occupancy/100))
+    // Formula: Total Fixed (Relevant) / (Days * (Occupancy/100))
     const expectedEventsPerMonth = settings.workingDaysPerMonth * (settings.occupancyRate / 100);
-    const overheadPerEvent = expectedEventsPerMonth > 0 ? fixedCostsSum / expectedEventsPerMonth : 0;
+    const overheadPerEvent = expectedEventsPerMonth > 0 ? sumRelevantFixed / expectedEventsPerMonth : 0;
 
     // 2. Sum Items
     let totalVar = 0;
@@ -92,10 +115,11 @@ export const BudgetForm: React.FC = () => {
       totalVariable: totalVar,
       totalSales: totalSale,
       netProfit: profit,
-      margin: margin
+      margin: margin,
+      relevantFixedSum: sumRelevantFixed
     });
 
-  }, [items, fixedCostsSum, settings]);
+  }, [items, allFixedCosts, settings, eventDate]);
 
   const addItem = (catalogItem: VariableCostItem) => {
     const newItem: BudgetItem = {
@@ -130,6 +154,7 @@ export const BudgetForm: React.FC = () => {
       clientPhone,
       eventName,
       eventDate,
+      guestCount: Number(guestCount) || 0,
       status,
       items,
       totalFixedCostShare: financials.fixedCostShare,
@@ -137,7 +162,7 @@ export const BudgetForm: React.FC = () => {
       totalSales: financials.totalSales,
       netProfit: financials.netProfit,
       marginPercent: financials.margin,
-      createdAt: Date.now() // placeholder, updated in service
+      createdAt: Date.now()
     };
 
     await saveBudget(budget);
@@ -166,6 +191,7 @@ export const BudgetForm: React.FC = () => {
               <Input label="Telefone" value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
               <Input label="Nome do Evento" value={eventName} onChange={e => setEventName(e.target.value)} />
               <Input label="Data" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
+              <Input label="Quantidade de Pessoas" type="number" value={guestCount} onChange={e => setGuestCount(e.target.value)} />
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                 <select 
@@ -288,8 +314,9 @@ export const BudgetForm: React.FC = () => {
               
               <div className="bg-blue-50 p-3 rounded-md mt-4 text-xs text-blue-700">
                 <p><strong>Cálculo do Rateio:</strong></p>
-                <p>Custos Fixos Totais / (Dias Úteis * % Ocupação)</p>
-                <p>{formatCurrency(fixedCostsSum)} / ({settings.workingDaysPerMonth} * {settings.occupancyRate}%)</p>
+                <p>Custos Fixos do Período / (Dias Úteis * % Ocupação)</p>
+                <p>{formatCurrency(financials.relevantFixedSum)} / ({settings.workingDaysPerMonth} * {settings.occupancyRate}%)</p>
+                <p className="mt-1 text-blue-500 italic">Considerando custos recorrentes + custos específicos de {eventDate ? eventDate.substring(0, 7) : '...'}</p>
               </div>
 
             </CardContent>

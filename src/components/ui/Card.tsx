@@ -8,9 +8,12 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string }> =
   );
 };
 
-export const CardHeader: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
+export const CardHeader: React.FC<{ title: string; action?: React.ReactNode; icon?: React.ReactNode }> = ({ title, action, icon }) => (
   <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-    <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+    <div className="flex items-center gap-3">
+      {icon && <div className="text-slate-500">{icon}</div>}
+      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+    </div>
     {action && <div>{action}</div>}
   </div>
 );

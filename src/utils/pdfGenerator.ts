@@ -22,6 +22,7 @@ export const generateBudgetPDF = (budget: Budget) => {
   doc.text(`Telefone: ${budget.clientPhone}`, 14, 46);
   doc.text(`Evento: ${budget.eventName}`, 14, 52);
   doc.text(`Data do Evento: ${formatDate(budget.eventDate)}`, 14, 58);
+  doc.text(`Convidados: ${budget.guestCount || 0} pessoas`, 14, 64);
 
   // Table Data (Items)
   const tableBody = budget.items.map(item => [
@@ -32,7 +33,7 @@ export const generateBudgetPDF = (budget: Budget) => {
   ]);
 
   autoTable(doc, {
-    startY: 65,
+    startY: 75,
     head: [['Item', 'Qtd', 'Valor Unit.', 'Total']],
     body: tableBody,
     theme: 'striped',

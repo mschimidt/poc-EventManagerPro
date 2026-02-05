@@ -96,6 +96,10 @@ export const saveBudget = async (budget: Budget) => {
   }
 };
 
+export const deleteBudget = async (id: string) => {
+  await deleteDoc(doc(db, COLLECTIONS.BUDGETS, id));
+};
+
 export const getBudgetById = async (id: string): Promise<Budget | null> => {
   const docRef = doc(db, COLLECTIONS.BUDGETS, id);
   const snap = await getDoc(docRef);

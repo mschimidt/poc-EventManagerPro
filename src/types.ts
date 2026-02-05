@@ -40,6 +40,7 @@ export interface Budget {
   clientPhone: string;
   eventName: string;
   eventDate: string; // ISO date string
+  guestCount: number; // Add guest count
   status: BudgetStatus;
   items: BudgetItem[];
   

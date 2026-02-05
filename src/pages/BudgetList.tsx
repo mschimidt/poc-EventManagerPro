@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getBudgets, updateBudgetStatus } from '../services/firestore';
+import { getBudgets, updateBudgetStatus, deleteBudget } from '../services/firestore';
 import { Budget, BudgetStatus } from '../types';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -7,7 +7,7 @@ import { Input } from '../components/ui/Input';
 import { generateBudgetPDF } from '../utils/pdfGenerator';
 import { formatCurrency, formatDate } from '../utils/format';
 import { useNavigate } from 'react-router-dom';
-import { FileDown, Edit, Filter } from 'lucide-react';
+import { FileDown, Edit, Trash2 } from 'lucide-react';
 
 export const BudgetList: React.FC = () => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -46,6 +46,13 @@ export const BudgetList: React.FC = () => {
   const handleStatusChange = async (id: string, newStatus: string) => {
     await updateBudgetStatus(id, newStatus);
     loadBudgets();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.')) {
+      await deleteBudget(id);
+      loadBudgets();
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -127,6 +134,13 @@ export const BudgetList: React.FC = () => {
                         title="Gerar PDF"
                       >
                         <FileDown size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(budget.id!)}
+                        className="text-red-600 hover:text-red-900" 
+                        title="Excluir"
+                      >
+                        <Trash2 size={18} />
                       </button>
                     </td>
                   </tr>
