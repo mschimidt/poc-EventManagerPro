@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, 'react';
 import { Budget, BudgetStatus } from '../types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 
 interface CalendarProps {
   events: Budget[];
@@ -33,7 +34,10 @@ export const Calendar: React.FC<CalendarProps> = ({ events }) => {
     }
     // Current month's days
     for (let i = 1; i <= daysInMonth; i++) {
-      days.push({ key: `${year}-${month}-${i}`, day: i, isCurrentMonth: true, date: new Date(year, month, i) });
+      const date = new Date(year, month, i);
+      // Adjust for timezone offset to prevent date shifting
+      const adjustedDate = new Date(date.getTime() - date.getTimezoneOffset() * -60000);
+      days.push({ key: `${year}-${month}-${i}`, day: i, isCurrentMonth: true, date: adjustedDate });
     }
     return days;
   };
@@ -48,7 +52,7 @@ export const Calendar: React.FC<CalendarProps> = ({ events }) => {
           <ChevronLeft size={20} />
         </button>
         <h3 className="font-semibold text-lg capitalize">
-          {currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+          {currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })}
         </h3>
         <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} className="p-2 rounded-full hover:bg-slate-100">
           <ChevronRight size={20} />
@@ -60,10 +64,10 @@ export const Calendar: React.FC<CalendarProps> = ({ events }) => {
         
         {days.map(({ key, day, isCurrentMonth, date }) => (
           <div key={key} className={`h-24 p-1 border border-slate-100 text-left overflow-hidden ${isCurrentMonth ? 'bg-white' : 'bg-slate-50'}`}>
-            {day && <span className={`text-xs ${new Date().toDateString() === date?.toDateString() ? 'bg-indigo-600 text-white rounded-full px-1.5 py-0.5' : ''}`}>{day}</span>}
+            {day && <span className={`text-xs ${new Date().toISOString().slice(0, 10) === date?.toISOString().slice(0, 10) ? 'bg-indigo-600 text-white rounded-full px-1.5 py-0.5' : ''}`}>{day}</span>}
             <div className="mt-1 space-y-1">
-              {date && events.filter(e => new Date(e.eventDate).toDateString() === date.toDateString()).map(event => (
-                <div key={event.id} className="text-xs text-white p-1 rounded-md truncate" style={{ backgroundColor: getStatusColor(event.status).replace('bg-', '') }}>
+              {date && events.filter(e => e.eventDate === date.toISOString().slice(0, 10)).map(event => (
+                <div key={event.id} className={`text-xs text-white p-1 rounded-md truncate ${getStatusColor(event.status)}`}>
                   {event.eventName}
                 </div>
               ))}
