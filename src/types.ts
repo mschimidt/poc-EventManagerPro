@@ -30,8 +30,7 @@ export interface BudgetItem {
   id: string; // generated uuid for list key
   name: string;
   quantity: number;
-  unitCost: number; // snapshot of cost at time of budget
-  unitPrice: number; // editable selling price
+  unitCost: number; // cost defined by user per item
 }
 
 export interface Budget {

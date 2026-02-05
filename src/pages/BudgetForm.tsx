@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  getSettings, getFixedCosts, getVariableItems, saveBudget, getBudgetById 
+  getSettings, getFixedCosts, saveBudget, getBudgetById 
 } from '../services/firestore';
-import { Budget, BudgetItem, BudgetStatus, VariableCostItem, FixedCost } from '../types';
+import { Budget, BudgetItem, BudgetStatus, FixedCost } from '../types';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { formatCurrency, formatPercent } from '../utils/format';
-import { Trash2, Plus, Calculator } from 'lucide-react';
+import { formatCurrency } from '../utils/format';
+import { Trash2, Plus, Calculator, Copy } from 'lucide-react';
 
 export const BudgetForm: React.FC = () => {
   const { id } = useParams();
@@ -20,39 +20,35 @@ export const BudgetForm: React.FC = () => {
   const [clientPhone, setClientPhone] = useState('');
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
-  const [guestCount, setGuestCount] = useState<string>(''); // Managed as string for input, converted to number
+  const [guestCount, setGuestCount] = useState<string>('');
   const [status, setStatus] = useState<BudgetStatus>(BudgetStatus.DRAFT);
   const [items, setItems] = useState<BudgetItem[]>([]);
+  const [desiredMargin, setDesiredMargin] = useState('20');
 
   // System Data for Calculation
-  const [catalog, setCatalog] = useState<VariableCostItem[]>([]);
   const [allFixedCosts, setAllFixedCosts] = useState<FixedCost[]>([]);
   const [settings, setSettings] = useState({ occupancyRate: 70, workingDaysPerMonth: 22 });
 
   // Calculation Results
   const [financials, setFinancials] = useState({
     fixedCostShare: 0,
-    totalVariable: 0,
-    totalSales: 0,
+    eventItemsCost: 0,
+    totalEventCost: 0,
+    sellingPrice: 0,
     netProfit: 0,
-    margin: 0,
-    relevantFixedSum: 0 // To display which sum was used
+    relevantFixedSum: 0
   });
 
   useEffect(() => {
     const init = async () => {
-      // 1. Load System Data
-      const [allFixed, allCatalog, sysSettings] = await Promise.all([
+      const [allFixed, sysSettings] = await Promise.all([
         getFixedCosts(),
-        getVariableItems(),
         getSettings()
       ]);
 
       setAllFixedCosts(allFixed);
-      setCatalog(allCatalog);
       setSettings(sysSettings);
 
-      // 2. Load Budget if Edit Mode
       if (id) {
         const existing = await getBudgetById(id);
         if (existing) {
@@ -63,6 +59,7 @@ export const BudgetForm: React.FC = () => {
           setGuestCount(existing.guestCount ? String(existing.guestCount) : '');
           setStatus(existing.status);
           setItems(existing.items);
+          setDesiredMargin(String(existing.marginPercent || '20'));
         }
       }
       setLoading(false);
@@ -70,69 +67,68 @@ export const BudgetForm: React.FC = () => {
     init();
   }, [id]);
 
-  // Recalculate whenever items, settings, or the event DATE changes
   useEffect(() => {
-    // 0. Determine Relevant Fixed Costs
-    // Filter costs that match the event Month/Year OR have no date (recurring)
+    // Determine Relevant Fixed Costs
     let sumRelevantFixed = 0;
-    
     if (eventDate) {
-      const eventYearMonth = eventDate.substring(0, 7); // "YYYY-MM"
-      
-      const relevantCosts = allFixedCosts.filter(fc => {
-        // If cost has no specific date, it's recurring (applies to all months)
-        if (!fc.monthYear) return true;
-        // Otherwise, must match the event month
-        return fc.monthYear === eventYearMonth;
-      });
-      
+      const eventYearMonth = eventDate.substring(0, 7);
+      const relevantCosts = allFixedCosts.filter(fc => !fc.monthYear || fc.monthYear === eventYearMonth);
       sumRelevantFixed = relevantCosts.reduce((acc, curr) => acc + curr.amount, 0);
     } else {
-      // Default fallback: sum of recurring only if no date selected yet? 
-      // Or sum of everything? Let's use recurring only as baseline.
       sumRelevantFixed = allFixedCosts.filter(fc => !fc.monthYear).reduce((acc, curr) => acc + curr.amount, 0);
     }
 
-    // 1. Calculate Overhead Share
-    // Formula: Total Fixed (Relevant) / (Days * (Occupancy/100))
+    // Calculate Overhead Share
     const expectedEventsPerMonth = settings.workingDaysPerMonth * (settings.occupancyRate / 100);
-    const overheadPerEvent = expectedEventsPerMonth > 0 ? sumRelevantFixed / expectedEventsPerMonth : 0;
+    const fixedCostShare = expectedEventsPerMonth > 0 ? sumRelevantFixed / expectedEventsPerMonth : 0;
 
-    // 2. Sum Items
-    let totalVar = 0;
-    let totalSale = 0;
+    // Sum Event Items Cost
+    const eventItemsCost = items.reduce((acc, item) => acc + item.unitCost * item.quantity, 0);
 
-    items.forEach(item => {
-      totalVar += item.unitCost * item.quantity;
-      totalSale += item.unitPrice * item.quantity;
-    });
+    // Total Cost
+    const totalEventCost = fixedCostShare + eventItemsCost;
 
-    const profit = totalSale - totalVar - overheadPerEvent;
-    const margin = totalSale > 0 ? (profit / totalSale) * 100 : 0;
+    // Calculate Selling Price based on Margin
+    const marginValue = parseFloat(desiredMargin) || 0;
+    let sellingPrice = 0;
+    if (marginValue < 100) {
+      sellingPrice = totalEventCost / (1 - marginValue / 100);
+    } else {
+      sellingPrice = totalEventCost; // Or some other handling for 100% margin
+    }
+
+    const netProfit = sellingPrice - totalEventCost;
 
     setFinancials({
-      fixedCostShare: overheadPerEvent,
-      totalVariable: totalVar,
-      totalSales: totalSale,
-      netProfit: profit,
-      margin: margin,
+      fixedCostShare,
+      eventItemsCost,
+      totalEventCost,
+      sellingPrice,
+      netProfit,
       relevantFixedSum: sumRelevantFixed
     });
 
-  }, [items, allFixedCosts, settings, eventDate]);
+  }, [items, allFixedCosts, settings, eventDate, desiredMargin]);
 
-  const addItem = (catalogItem: VariableCostItem) => {
+  const addItem = () => {
     const newItem: BudgetItem = {
       id: crypto.randomUUID(),
-      name: catalogItem.name,
+      name: '',
       quantity: 1,
-      unitCost: catalogItem.defaultUnitCost,
-      unitPrice: catalogItem.defaultUnitPrice
+      unitCost: 0,
     };
     setItems([...items, newItem]);
   };
 
-  const updateItem = (index: number, field: keyof BudgetItem, value: number) => {
+  const duplicateItem = (index: number) => {
+    const itemToCopy = items[index];
+    const newItem = { ...itemToCopy, id: crypto.randomUUID() };
+    const newItems = [...items];
+    newItems.splice(index + 1, 0, newItem);
+    setItems(newItems);
+  };
+
+  const updateItem = (index: number, field: keyof BudgetItem, value: string | number) => {
     const newItems = [...items];
     (newItems[index] as any)[field] = value;
     setItems(newItems);
@@ -158,10 +154,10 @@ export const BudgetForm: React.FC = () => {
       status,
       items,
       totalFixedCostShare: financials.fixedCostShare,
-      totalVariableCost: financials.totalVariable,
-      totalSales: financials.totalSales,
+      totalVariableCost: financials.eventItemsCost,
+      totalSales: financials.sellingPrice,
       netProfit: financials.netProfit,
-      marginPercent: financials.margin,
+      marginPercent: Number(desiredMargin),
       createdAt: Date.now()
     };
 
@@ -182,7 +178,6 @@ export const BudgetForm: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Col: Details & Items */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader title="Dados do Evento" />
@@ -207,20 +202,8 @@ export const BudgetForm: React.FC = () => {
 
           <Card>
             <CardHeader 
-              title="Itens do Orçamento" 
-              action={
-                <select 
-                  className="text-sm border-slate-300 rounded-md shadow-sm"
-                  onChange={(e) => {
-                    const item = catalog.find(c => c.id === e.target.value);
-                    if (item) addItem(item);
-                    e.target.value = '';
-                  }}
-                >
-                  <option value="">+ Adicionar do Catálogo</option>
-                  {catalog.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              }
+              title="Itens de Custo do Evento" 
+              action={<Button size="sm" onClick={addItem}><Plus size={16} className="mr-2"/>Adicionar Item</Button>}
             />
             <CardContent>
               {items.length === 0 ? (
@@ -232,38 +215,29 @@ export const BudgetForm: React.FC = () => {
                       <tr className="border-b border-slate-200">
                         <th className="text-left py-2 font-medium text-slate-500">Item</th>
                         <th className="text-left py-2 w-20 font-medium text-slate-500">Qtd</th>
-                        <th className="text-left py-2 w-32 font-medium text-slate-500">Preço Venda</th>
-                        <th className="text-right py-2 w-32 font-medium text-slate-500">Subtotal</th>
-                        <th className="w-10"></th>
+                        <th className="text-left py-2 w-32 font-medium text-slate-500">Custo Unit.</th>
+                        <th className="text-right py-2 w-32 font-medium text-slate-500">Custo Total</th>
+                        <th className="w-20 text-center">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {items.map((item, idx) => (
                         <tr key={item.id}>
-                          <td className="py-2">{item.name}</td>
-                          <td className="py-2">
-                            <input 
-                              type="number" min="1"
-                              className="w-16 border rounded px-1"
-                              value={item.quantity}
-                              onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))}
-                            />
+                          <td className="py-1">
+                            <input type="text" placeholder="Nome do item" className="w-full border rounded px-2 py-1" value={item.name} onChange={(e) => updateItem(idx, 'name', e.target.value)} />
                           </td>
-                          <td className="py-2">
-                             <input 
-                              type="number"
-                              className="w-24 border rounded px-1"
-                              value={item.unitPrice}
-                              onChange={(e) => updateItem(idx, 'unitPrice', Number(e.target.value))}
-                            />
+                          <td className="py-1">
+                            <input type="number" min="1" className="w-16 border rounded px-2 py-1" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} />
                           </td>
-                          <td className="py-2 text-right">
-                            {formatCurrency(item.quantity * item.unitPrice)}
+                          <td className="py-1">
+                             <input type="number" className="w-24 border rounded px-2 py-1" value={item.unitCost} onChange={(e) => updateItem(idx, 'unitCost', Number(e.target.value))} />
                           </td>
-                          <td className="py-2 text-right">
-                            <button onClick={() => removeItem(idx)} className="text-red-500 hover:text-red-700">
-                              <Trash2 size={16} />
-                            </button>
+                          <td className="py-1 text-right font-medium">{formatCurrency(item.quantity * item.unitCost)}</td>
+                          <td className="py-1 text-center">
+                            <div className="flex justify-center items-center gap-2">
+                              <button onClick={() => duplicateItem(idx)} className="text-blue-500 hover:text-blue-700" title="Duplicar"><Copy size={16} /></button>
+                              <button onClick={() => removeItem(idx)} className="text-red-500 hover:text-red-700" title="Excluir"><Trash2 size={16} /></button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -275,50 +249,52 @@ export const BudgetForm: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right Col: Calculations */}
         <div className="lg:col-span-1">
           <Card className="sticky top-6">
             <CardHeader title="Resumo Financeiro" icon={<Calculator />} />
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Total Venda (Receita):</span>
-                <span className="font-bold text-slate-900">{formatCurrency(financials.totalSales)}</span>
+                <span className="text-slate-500">Rateio Custos Fixos:</span>
+                <span className="font-medium text-slate-700">{formatCurrency(financials.fixedCostShare)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Custos do Evento (Itens):</span>
+                <span className="font-medium text-slate-700">{formatCurrency(financials.eventItemsCost)}</span>
               </div>
               
-              <div className="border-t border-slate-100 my-2"></div>
+              <div className="border-t border-slate-200 my-2"></div>
 
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">(-) Custos Variáveis:</span>
-                <span className="text-red-600">{formatCurrency(financials.totalVariable)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">(-) Rateio Custos Fixos:</span>
-                <span className="text-red-600">{formatCurrency(financials.fixedCostShare)}</span>
+              <div className="flex justify-between items-center text-base bg-slate-50 p-3 rounded-md">
+                <span className="font-semibold text-slate-900">Custo Total do Evento:</span>
+                <span className="font-bold text-red-600">{formatCurrency(financials.totalEventCost)}</span>
               </div>
 
               <div className="border-t border-slate-200 my-2"></div>
-
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-slate-900">Lucro Líquido:</span>
-                <span className={`text-lg font-bold ${financials.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(financials.netProfit)}
-                </span>
-              </div>
               
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">Margem (%):</span>
-                <span className={`font-medium ${financials.margin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatPercent(financials.margin)}
-                </span>
-              </div>
-              
-              <div className="bg-blue-50 p-3 rounded-md mt-4 text-xs text-blue-700">
-                <p><strong>Cálculo do Rateio:</strong></p>
-                <p>Custos Fixos do Período / (Dias Úteis * % Ocupação)</p>
-                <p>{formatCurrency(financials.relevantFixedSum)} / ({settings.workingDaysPerMonth} * {settings.occupancyRate}%)</p>
-                <p className="mt-1 text-blue-500 italic">Considerando custos recorrentes + custos específicos de {eventDate ? eventDate.substring(0, 7) : '...'}</p>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">Margem de Lucro Líquido Desejada</label>
+                <div className="flex items-center">
+                  <Input 
+                    type="number"
+                    value={desiredMargin}
+                    onChange={(e) => setDesiredMargin(e.target.value)}
+                    className="flex-1"
+                  />
+                  <span className="ml-2 text-lg font-bold text-slate-500">%</span>
+                </div>
               </div>
 
+              <div className="border-t border-slate-200 my-2"></div>
+              
+              <div className="flex flex-col items-center text-center bg-green-50 p-4 rounded-md">
+                <span className="text-sm font-semibold text-green-800">Valor de Venda do Evento</span>
+                <span className="text-3xl font-bold text-green-700 mt-1">
+                  {formatCurrency(financials.sellingPrice)}
+                </span>
+                <span className="text-xs text-green-600 mt-2">
+                  Lucro líquido estimado: {formatCurrency(financials.netProfit)}
+                </span>
+              </div>
             </CardContent>
           </Card>
         </div>

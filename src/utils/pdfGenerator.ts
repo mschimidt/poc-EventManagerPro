@@ -25,12 +25,33 @@ export const generateBudgetPDF = (budget: Budget) => {
   doc.text(`Convidados: ${budget.guestCount || 0} pessoas`, 14, 64);
 
   // Table Data (Items)
-  const tableBody = budget.items.map(item => [
-    item.name,
-    item.quantity,
-    formatCurrency(item.unitPrice),
-    formatCurrency(item.unitPrice * item.quantity)
-  ]);
+  // FIX: The `BudgetItem` type doesn't have a `unitPrice`. 
+  // We calculate it for presentation by proportionally distributing the total sales amount
+  // based on each item's relative cost. If costs are zero, we distribute by quantity.
+  const totalVariableCost = budget.totalVariableCost;
+  const totalQuantity = budget.items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const tableBody = budget.items.map(item => {
+    let itemTotalPrice = 0;
+
+    if (totalVariableCost > 0) {
+      const itemTotalCost = item.unitCost * item.quantity;
+      const costProportion = itemTotalCost / totalVariableCost;
+      itemTotalPrice = budget.totalSales * costProportion;
+    } else if (totalQuantity > 0) {
+      const quantityProportion = item.quantity / totalQuantity;
+      itemTotalPrice = budget.totalSales * quantityProportion;
+    }
+
+    const unitPrice = item.quantity > 0 ? itemTotalPrice / item.quantity : 0;
+    
+    return [
+      item.name,
+      item.quantity,
+      formatCurrency(unitPrice),
+      formatCurrency(itemTotalPrice)
+    ];
+  });
 
   autoTable(doc, {
     startY: 75,
