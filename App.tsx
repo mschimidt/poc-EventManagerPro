@@ -8,6 +8,7 @@ import { Costs } from './src/pages/Costs';
 import { BudgetList } from './src/pages/BudgetList';
 import { BudgetForm } from './src/pages/BudgetForm';
 import { Reports } from './src/pages/Reports';
+import { Guide } from './src/pages/Guide';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -34,6 +35,7 @@ const App: React.FC = () => {
             <Route path="budgets/new" element={<BudgetForm />} />
             <Route path="budgets/edit/:id" element={<BudgetForm />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="guide" element={<Guide />} />
           </Route>
         </Routes>
       </Router>

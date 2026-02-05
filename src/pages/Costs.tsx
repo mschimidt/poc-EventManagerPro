@@ -105,26 +105,29 @@ export const Costs: React.FC = () => {
         <CardHeader title="Custos Fixos Mensais" />
         <CardContent>
           <div className="flex gap-4 mb-4 items-end flex-wrap md:flex-nowrap">
-            <Input 
-              label="Mês/Ano" 
-              type="month"
-              value={newFixed.monthYear} 
-              onChange={e => setNewFixed({...newFixed, monthYear: e.target.value})}
-              className="w-40"
-            />
-            <Input 
-              label="Nome do Custo (ex: Aluguel)" 
-              value={newFixed.name} 
-              onChange={e => setNewFixed({...newFixed, name: e.target.value})}
-              className="flex-1 min-w-[200px]"
-            />
-            <Input 
-              label="Valor (R$)" 
-              type="number" 
-              value={newFixed.amount} 
-              onChange={e => setNewFixed({...newFixed, amount: e.target.value})}
-              className="w-32"
-            />
+            <div className="w-full md:w-56 shrink-0">
+              <Input 
+                label="Mês/Ano" 
+                type="month"
+                value={newFixed.monthYear} 
+                onChange={e => setNewFixed({...newFixed, monthYear: e.target.value})}
+              />
+            </div>
+            <div className="w-full md:flex-1 min-w-[200px]">
+              <Input 
+                label="Nome do Custo (ex: Aluguel)" 
+                value={newFixed.name} 
+                onChange={e => setNewFixed({...newFixed, name: e.target.value})}
+              />
+            </div>
+            <div className="w-full md:w-32 shrink-0">
+              <Input 
+                label="Valor (R$)" 
+                type="number" 
+                value={newFixed.amount} 
+                onChange={e => setNewFixed({...newFixed, amount: e.target.value})}
+              />
+            </div>
             <Button onClick={handleAddFixed}>Adicionar</Button>
           </div>
           
@@ -163,26 +166,29 @@ export const Costs: React.FC = () => {
         <CardHeader title="Itens de Custo Variável (Catálogo)" />
         <CardContent>
           <div className="flex gap-4 mb-4 items-end flex-wrap md:flex-nowrap">
-            <Input 
-              label="Item (ex: Buffet Premium)" 
-              value={newVariable.name} 
-              onChange={e => setNewVariable({...newVariable, name: e.target.value})}
-              className="flex-grow"
-            />
-            <Input 
-              label="Custo Interno (R$)" 
-              type="number"
-              value={newVariable.cost} 
-              onChange={e => setNewVariable({...newVariable, cost: e.target.value})}
-              className="w-32"
-            />
-            <Input 
-              label="Preço Venda (R$)" 
-              type="number"
-              value={newVariable.price} 
-              onChange={e => setNewVariable({...newVariable, price: e.target.value})}
-              className="w-32"
-            />
+            <div className="w-full md:flex-1 min-w-[200px]">
+              <Input 
+                label="Item (ex: Buffet Premium)" 
+                value={newVariable.name} 
+                onChange={e => setNewVariable({...newVariable, name: e.target.value})}
+              />
+            </div>
+            <div className="w-full md:w-32 shrink-0">
+              <Input 
+                label="Custo Interno (R$)" 
+                type="number"
+                value={newVariable.cost} 
+                onChange={e => setNewVariable({...newVariable, cost: e.target.value})}
+              />
+            </div>
+            <div className="w-full md:w-32 shrink-0">
+              <Input 
+                label="Preço Venda (R$)" 
+                type="number"
+                value={newVariable.price} 
+                onChange={e => setNewVariable({...newVariable, price: e.target.value})}
+              />
+            </div>
             <Button onClick={handleAddVariable}>Adicionar</Button>
           </div>
 

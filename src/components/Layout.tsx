@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Wallet, Calendar, FileText, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Wallet, Calendar, FileText, LogOut, Settings, BookOpen } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const { logout, user } = useAuth();
@@ -11,6 +11,7 @@ export const Layout: React.FC = () => {
     { to: '/budgets', icon: Calendar, label: 'Orçamentos' },
     { to: '/costs', icon: Settings, label: 'Custos & Config' },
     { to: '/reports', icon: FileText, label: 'Relatórios' },
+    { to: '/guide', icon: BookOpen, label: 'Manual do Sistema' },
   ];
 
   return (
