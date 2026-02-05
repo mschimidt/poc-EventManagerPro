@@ -10,7 +10,6 @@ export const Guide: React.FC = () => {
         <p className="text-slate-500 text-lg">Entenda como utilizar todas as funcionalidades do EventManager Pro.</p>
       </div>
 
-      {/* Visão Geral */}
       <Card>
         <CardHeader title="Visão Geral" icon={<LayoutDashboard />} />
         <CardContent>
@@ -26,7 +25,6 @@ export const Guide: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Módulo 1: Custos e Configurações */}
         <Card className="border-l-4 border-l-indigo-500">
           <CardHeader title="1. Custos & Configurações" icon={<Settings />} />
           <CardContent className="space-y-4 text-sm text-slate-700">
@@ -38,36 +36,29 @@ export const Guide: React.FC = () => {
                 <strong>Parâmetros Gerais:</strong> Defina quantos dias úteis sua empresa opera e qual a taxa de ocupação esperada (ex: se você tem capacidade para 10 festas, mas costuma fechar 7, sua ocupação é 70%). Isso afeta o cálculo do rateio de custo fixo.
               </li>
               <li>
-                <strong>Custos Fixos Mensais:</strong> Cadastre aluguel, internet, salários, etc. 
+                <strong>Custos Fixos Mensais:</strong> Cadastre aluguel, internet, salários, etc. Os custos são agrupados por período (ex: "Fevereiro de 2026") e podem ser expandidos ou recolhidos para facilitar a visualização.
                 <br/>
-                <span className="text-indigo-600 font-medium">Importante:</span> Você pode cadastrar custos "Recorrentes" (sem data) que se aplicam a todos os meses, ou custos específicos para um Mês/Ano (ex: IPTU em Fevereiro/2026). O sistema usará essa data para calcular o rateio no momento do orçamento.
-              </li>
-              <li>
-                <strong>Itens de Custo Variável (Catálogo):</strong> Cadastre tudo que você vende (Buffet, Decoração, DJ). Informe o <em>Custo Interno</em> (quanto você paga) e o <em>Preço de Venda</em> (quanto você cobra). Isso agiliza a criação de orçamentos.
+                <span className="text-indigo-600 font-medium">Importante:</span> Você pode cadastrar custos "Recorrentes" (sem data) que se aplicam a todos os meses, ou custos específicos para um Mês/Ano.
               </li>
             </ul>
           </CardContent>
         </Card>
 
-        {/* Módulo 2: Orçamentos */}
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader title="2. Orçamentos" icon={<Calendar />} />
           <CardContent className="space-y-4 text-sm text-slate-700">
             <p>
-              Aqui você cria as propostas para os clientes. O sistema calcula automaticamente a lucratividade.
+              Aqui você cria as propostas para os clientes. O sistema usa um método de "Custo +" para precificar.
             </p>
             <ul className="list-disc pl-5 space-y-2">
               <li>
-                <strong>Criação:</strong> Preencha os dados do cliente, data e quantidade de pessoas. Adicione itens do catálogo ou itens personalizados.
+                <strong>Criação:</strong> Preencha os dados do cliente e do evento. Em seguida, adicione cada custo do evento (buffet, decoração, etc.) manualmente, informando o nome, a quantidade e o custo unitário. Você pode duplicar linhas para agilizar.
               </li>
               <li>
-                <strong>Cálculo Automático (Rateio):</strong> O sistema pega todos os Custos Fixos do mês do evento (ou recorrentes) e divide pela capacidade produtiva da empresa.
-                <div className="bg-blue-50 p-2 rounded mt-1 text-xs text-blue-800">
-                  Fórmula: Custo Fixo Total / (Dias Úteis * % Ocupação)
-                </div>
+                <strong>Cálculo do Custo Total:</strong> O sistema soma todos os itens que você cadastrou e adiciona uma parcela dos seus custos fixos (o "rateio"). O resultado é o <strong>Custo Total do Evento</strong>.
               </li>
               <li>
-                <strong>Indicadores em Tempo Real:</strong> Enquanto você monta o orçamento, o sistema mostra se você está tendo lucro ou prejuízo líquido.
+                <strong>Definição do Preço:</strong> No resumo financeiro, você informa a <strong>Margem de Lucro Líquido</strong> que deseja ter. Com base nisso, o sistema calcula o <strong>Valor de Venda</strong> final a ser cobrado do cliente.
               </li>
               <li>
                 <strong>PDF:</strong> Gere um PDF profissional com um clique para enviar ao cliente.
@@ -76,7 +67,6 @@ export const Guide: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Módulo 3: Relatórios */}
         <Card className="border-l-4 border-l-green-500">
           <CardHeader title="3. Relatórios Financeiros" icon={<FileText />} />
           <CardContent className="space-y-4 text-sm text-slate-700">
@@ -100,7 +90,6 @@ export const Guide: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Dicas Extras */}
         <Card className="border-l-4 border-l-amber-500">
           <CardHeader title="Dicas Importantes" icon={<Calculator />} />
           <CardContent className="space-y-4 text-sm text-slate-700">
@@ -109,10 +98,10 @@ export const Guide: React.FC = () => {
                 Mantenha os status dos orçamentos atualizados. Orçamentos "Declinados" não entram na soma de receita.
               </li>
               <li>
-                Se o <strong>Lucro Líquido</strong> no orçamento estiver vermelho, significa que o preço cobrado não está pagando nem a parcela de custos fixos da empresa para aquele dia.
+                Se o <strong>Lucro Líquido</strong> no orçamento estiver negativo, significa que a margem de lucro que você definiu não é suficiente para cobrir os custos. Aumente a margem ou reduza os custos.
               </li>
               <li>
-                Revise a <strong>% de Ocupação</strong> periodicamente. Se você está trabalhando mais do que o previsto, aumente a porcentagem para que o custo fixo por evento diminua.
+                Revise a <strong>% de Ocupação</strong> periodicamente. Se você está trabalhando mais do que o previsto, aumente a porcentagem para que o custo fixo rateado por evento diminua.
               </li>
             </ul>
           </CardContent>

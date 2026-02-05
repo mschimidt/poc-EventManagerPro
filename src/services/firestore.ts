@@ -12,12 +12,11 @@ import {
   Timestamp
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { FixedCost, VariableCostItem, SystemSettings, Budget } from "../types";
+import { FixedCost, SystemSettings, Budget } from "../types";
 
 // Collections
 const COLLECTIONS = {
   FIXED_COSTS: 'fixed_costs',
-  VARIABLE_ITEMS: 'variable_items',
   SETTINGS: 'settings',
   BUDGETS: 'budgets'
 };
@@ -55,20 +54,6 @@ export const addFixedCost = async (cost: FixedCost) => {
 
 export const deleteFixedCost = async (id: string) => {
   await deleteDoc(doc(db, COLLECTIONS.FIXED_COSTS, id));
-};
-
-// --- Variable Items ---
-export const getVariableItems = async (): Promise<VariableCostItem[]> => {
-  const snapshot = await getDocs(collection(db, COLLECTIONS.VARIABLE_ITEMS));
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as VariableCostItem));
-};
-
-export const addVariableItem = async (item: VariableCostItem) => {
-  await addDoc(collection(db, COLLECTIONS.VARIABLE_ITEMS), item);
-};
-
-export const deleteVariableItem = async (id: string) => {
-  await deleteDoc(doc(db, COLLECTIONS.VARIABLE_ITEMS, id));
 };
 
 // --- Budgets ---
