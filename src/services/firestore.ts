@@ -9,13 +9,14 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { Cost, SystemSettings, Budget } from "../types";
+import { Cost, SystemSettings, Budget, DefaultItem } from "../types";
 
 // Collections
 const COLLECTIONS = {
   COSTS: 'costs',
   SETTINGS: 'settings',
-  BUDGETS: 'budgets'
+  BUDGETS: 'budgets',
+  DEFAULT_ITEMS: 'default_items'
 };
 
 // --- Settings ---
@@ -50,6 +51,20 @@ export const addCost = async (cost: Cost) => {
 
 export const deleteCost = async (id: string) => {
   await deleteDoc(doc(db, COLLECTIONS.COSTS, id));
+};
+
+// --- Default Items (Itens Padrão) ---
+export const getDefaultItems = async (): Promise<DefaultItem[]> => {
+  const snapshot = await getDocs(collection(db, COLLECTIONS.DEFAULT_ITEMS));
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DefaultItem));
+};
+
+export const addDefaultItem = async (item: DefaultItem) => {
+  await addDoc(collection(db, COLLECTIONS.DEFAULT_ITEMS), item);
+};
+
+export const deleteDefaultItem = async (id: string) => {
+  await deleteDoc(doc(db, COLLECTIONS.DEFAULT_ITEMS, id));
 };
 
 // --- Budgets ---

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  getSettings, getCosts, saveBudget, getBudgetById 
+  getSettings, getCosts, saveBudget, getBudgetById, getDefaultItems
 } from '../services/firestore';
 import { Budget, BudgetItem, BudgetStatus, Cost } from '../types';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { formatCurrency } from '../utils/format';
-import { Trash2, Plus, Calculator, Copy, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, Calculator, Copy, ChevronDown, PackageOpen } from 'lucide-react';
 
 const formatPhone = (value: string) => {
   if (!value) return '';
@@ -95,6 +95,25 @@ export const BudgetForm: React.FC = () => {
   }, [items, allCosts, settings, eventDate, desiredMargin]);
 
   const addItem = () => setItems([...items, { id: crypto.randomUUID(), name: '', quantity: 1, unitCost: 0 }]);
+  
+  const loadDefaultItems = async () => {
+    if (items.length > 0) {
+      if (!window.confirm('Deseja carregar os itens padrão? Eles serão adicionados à lista atual.')) return;
+    }
+    const defaults = await getDefaultItems();
+    if (defaults.length === 0) {
+      alert('Nenhum item padrão cadastrado na tela de Custos.');
+      return;
+    }
+    const newItems = defaults.map(d => ({
+      id: crypto.randomUUID(),
+      name: d.name,
+      quantity: 1,
+      unitCost: d.unitCost
+    }));
+    setItems([...items, ...newItems]);
+  };
+
   const duplicateItem = (index: number) => {
     const newItem = { ...items[index], id: crypto.randomUUID() };
     const newItems = [...items];
@@ -157,7 +176,19 @@ export const BudgetForm: React.FC = () => {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader title="Itens de Custo do Evento" action={<Button size="sm" onClick={addItem}><Plus size={16} className="mr-2"/>Adicionar Item</Button>} />
+            <CardHeader 
+              title="Itens de Custo do Evento" 
+              action={
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={loadDefaultItems} title="Carregar lista de itens padrão">
+                    <PackageOpen size={16} className="mr-2"/>Carregar Padrões
+                  </Button>
+                  <Button size="sm" onClick={addItem}>
+                    <Plus size={16} className="mr-2"/>Adicionar Item
+                  </Button>
+                </div>
+              } 
+            />
             <CardContent>
               {items.length === 0 ? <p className="text-center text-slate-500 py-4">Nenhum item.</p> : (
                 <div className="overflow-x-auto"><table className="min-w-full text-sm">
