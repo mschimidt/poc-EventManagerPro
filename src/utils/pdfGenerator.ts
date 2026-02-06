@@ -25,22 +25,31 @@ export const generateBudgetPDF = (budget: Budget) => {
   doc.text(`Convidados: ${budget.guestCount || 0} pessoas`, 14, 64);
 
   // Table Data (Items)
+  // Simplified view: Only Item Name and Quantity
   const tableBody = budget.items.map(item => [
     item.name,
-    item.quantity,
-    formatCurrency(item.unitPrice),
-    formatCurrency(item.unitPrice * item.quantity)
+    item.quantity
   ]);
 
   autoTable(doc, {
     startY: 75,
-    head: [['Item', 'Qtd', 'Valor Unit.', 'Total']],
+    head: [['Item', 'Qtd']],
     body: tableBody,
     theme: 'striped',
     headStyles: { fillColor: [79, 70, 229] }, // Indigo
     styles: { fontSize: 10 },
-    foot: [['', '', 'Total Geral', formatCurrency(budget.totalSales)]],
-    footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+    columnStyles: {
+      0: { halign: 'left' }, // Item name alignment
+      1: { halign: 'center', cellWidth: 30 } // Quantity alignment and width
+    },
+    // Footer with Total
+    foot: [['Total Geral', formatCurrency(budget.totalSales)]],
+    footStyles: { 
+      fillColor: [240, 240, 240], 
+      textColor: [0, 0, 0], 
+      fontStyle: 'bold',
+      halign: 'right' // Align text to right to match the currency column visual
+    }
   });
 
   // Footer
