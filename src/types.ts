@@ -1,16 +1,10 @@
 
-export interface FixedCost {
+export interface Cost {
   id?: string;
   name: string;
   amount: number;
+  type: 'fixed' | 'variable';
   monthYear?: string; // Format: YYYY-MM
-}
-
-export interface VariableCostItem {
-  id?: string;
-  name: string;
-  defaultUnitCost: number; // Internal cost
-  defaultUnitPrice: number; // Selling price
 }
 
 export interface SystemSettings {
@@ -30,8 +24,7 @@ export interface BudgetItem {
   id: string; // generated uuid for list key
   name: string;
   quantity: number;
-  unitCost: number; // snapshot of cost at time of budget
-  unitPrice: number; // editable selling price
+  unitCost: number; // cost defined by user per item
 }
 
 export interface Budget {
@@ -39,8 +32,9 @@ export interface Budget {
   clientName: string;
   clientPhone: string;
   eventName: string;
+  eventLocation: string;
   eventDate: string; // ISO date string
-  guestCount: number; // Add guest count
+  guestCount: number;
   status: BudgetStatus;
   items: BudgetItem[];
   
