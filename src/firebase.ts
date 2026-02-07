@@ -1,20 +1,19 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+// FIX: Using Firebase v8 compat imports to resolve module errors.
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
 
-console.log("Minha Chave:", import.meta.env.VITE_API_KEY);
+// SUBSTITUA PELA SUA CONFIGURAÇÃO REAL DO FIREBASE
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyDummyKey",
+  authDomain: "dummy-project.firebaseapp.com",
+  projectId: "dummy-project",
+  storageBucket: "dummy-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
 };
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 
-// Exporta os serviços para usar no resto do app
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = firebase.auth();
+export const db = firebase.firestore();

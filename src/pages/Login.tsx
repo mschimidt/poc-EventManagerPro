@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+// FIX: Removed v9 `signInWithEmailAndPassword` import.
 import { auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
@@ -17,7 +17,8 @@ export const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // FIX: Switched to the v8 namespaced `signInWithEmailAndPassword` method.
+      await auth.signInWithEmailAndPassword(email, password);
       navigate('/');
     } catch (err) {
       setError('Falha no login. Verifique suas credenciais.');

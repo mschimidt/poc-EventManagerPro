@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signOut } from 'firebase/auth';
+// FIX: Using v8 compat API. Removed named imports for functions.
+import type { User } from 'firebase/auth';
 import { auth } from '../firebase';
 
 interface AuthContextType {
@@ -19,8 +20,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      // Only update if not in demo mode to prevent overwriting
+    // FIX: Switched to the v8 namespaced `onAuthStateChanged` method.
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       if (!isDemo) {
         setUser(currentUser);
       }
@@ -58,7 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsDemo(false);
       setUser(null);
     } else {
-      await signOut(auth);
+      // FIX: Switched to the v8 namespaced `signOut` method.
+      await auth.signOut();
     }
   };
 

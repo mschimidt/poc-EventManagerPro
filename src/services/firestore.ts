@@ -1,13 +1,3 @@
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  deleteDoc, 
-  query, 
-  getDoc,
-} from "firebase/firestore";
 import { db } from "../firebase";
 import { Cost, SystemSettings, Budget, DefaultItem } from "../types";
 
@@ -21,7 +11,8 @@ const COLLECTIONS = {
 
 // --- Settings ---
 export const getSettings = async (): Promise<SystemSettings> => {
-  const querySnapshot = await getDocs(collection(db, COLLECTIONS.SETTINGS));
+  // FIX: Using v8 syntax to get collection and documents.
+  const querySnapshot = await db.collection(COLLECTIONS.SETTINGS).get();
   if (querySnapshot.empty) {
     return { occupancyRate: 70, workingDaysPerMonth: 22 }; 
   }
@@ -30,58 +21,75 @@ export const getSettings = async (): Promise<SystemSettings> => {
 };
 
 export const saveSettings = async (settings: SystemSettings) => {
-  const querySnapshot = await getDocs(collection(db, COLLECTIONS.SETTINGS));
+  // FIX: Using v8 syntax for Firestore operations.
+  const collectionRef = db.collection(COLLECTIONS.SETTINGS);
+  const querySnapshot = await collectionRef.get();
+  const { id, ...dataToSave } = settings;
   if (querySnapshot.empty) {
-    await addDoc(collection(db, COLLECTIONS.SETTINGS), settings);
+    // FIX: Using v8 `add` method.
+    await collectionRef.add(dataToSave);
   } else {
     const docId = querySnapshot.docs[0].id;
-    await updateDoc(doc(db, COLLECTIONS.SETTINGS, docId), { ...settings });
+    // FIX: Using v8 `doc` and `update` methods.
+    await collectionRef.doc(docId).update(dataToSave);
   }
 };
 
 // --- Costs (Fixed and Variable) ---
 export const getCosts = async (): Promise<Cost[]> => {
-  const snapshot = await getDocs(collection(db, COLLECTIONS.COSTS));
+  // FIX: Using v8 `get` method on a collection.
+  const snapshot = await db.collection(COLLECTIONS.COSTS).get();
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Cost));
 };
 
 export const addCost = async (cost: Cost) => {
-  await addDoc(collection(db, COLLECTIONS.COSTS), cost);
+  const { id, ...data } = cost;
+  // FIX: Using v8 `add` method.
+  await db.collection(COLLECTIONS.COSTS).add(data);
 };
 
 export const deleteCost = async (id: string) => {
-  await deleteDoc(doc(db, COLLECTIONS.COSTS, id));
+  // FIX: Using v8 `doc` and `delete` methods.
+  await db.collection(COLLECTIONS.COSTS).doc(id).delete();
 };
 
 // --- Default Items (Itens Padrão) ---
 export const getDefaultItems = async (): Promise<DefaultItem[]> => {
-  const snapshot = await getDocs(collection(db, COLLECTIONS.DEFAULT_ITEMS));
+  // FIX: Using v8 `get` method on a collection.
+  const snapshot = await db.collection(COLLECTIONS.DEFAULT_ITEMS).get();
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DefaultItem));
 };
 
 export const addDefaultItem = async (item: DefaultItem) => {
-  await addDoc(collection(db, COLLECTIONS.DEFAULT_ITEMS), item);
+  const { id, ...data } = item;
+  // FIX: Using v8 `add` method.
+  await db.collection(COLLECTIONS.DEFAULT_ITEMS).add(data);
 };
 
 export const deleteDefaultItem = async (id: string) => {
-  await deleteDoc(doc(db, COLLECTIONS.DEFAULT_ITEMS, id));
+  // FIX: Using v8 `doc` and `delete` methods.
+  await db.collection(COLLECTIONS.DEFAULT_ITEMS).doc(id).delete();
 };
 
 // --- Budgets ---
 export const getBudgets = async (): Promise<Budget[]> => {
-  const q = query(collection(db, COLLECTIONS.BUDGETS));
-  const snapshot = await getDocs(q);
+  // FIX: Using v8 `get` method on a collection.
+  const q = db.collection(COLLECTIONS.BUDGETS);
+  const snapshot = await q.get();
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Budget));
 };
 
 export const saveBudget = async (budget: Budget) => {
+  const collectionRef = db.collection(COLLECTIONS.BUDGETS);
   if (budget.id) {
     const { id, ...data } = budget;
-    await updateDoc(doc(db, COLLECTIONS.BUDGETS, id), data);
+    // FIX: Using v8 `doc` and `update` methods.
+    await collectionRef.doc(id).update(data);
     return id;
   } else {
     const { id, ...data } = budget;
-    const docRef = await addDoc(collection(db, COLLECTIONS.BUDGETS), {
+    // FIX: Using v8 `add` method.
+    const docRef = await collectionRef.add({
       ...data,
       createdAt: Date.now()
     });
@@ -90,18 +98,22 @@ export const saveBudget = async (budget: Budget) => {
 };
 
 export const deleteBudget = async (id: string) => {
-  await deleteDoc(doc(db, COLLECTIONS.BUDGETS, id));
+  // FIX: Using v8 `doc` and `delete` methods.
+  await db.collection(COLLECTIONS.BUDGETS).doc(id).delete();
 };
 
 export const getBudgetById = async (id: string): Promise<Budget | null> => {
-  const docRef = doc(db, COLLECTIONS.BUDGETS, id);
-  const snap = await getDoc(docRef);
-  if (snap.exists()) {
+  // FIX: Using v8 `doc` and `get` methods.
+  const docRef = db.collection(COLLECTIONS.BUDGETS).doc(id);
+  const snap = await docRef.get();
+  // FIX: `exists` is a property in v8, not a method.
+  if (snap.exists) {
     return { id: snap.id, ...snap.data() } as Budget;
   }
   return null;
 };
 
 export const updateBudgetStatus = async (id: string, status: string) => {
-  await updateDoc(doc(db, COLLECTIONS.BUDGETS, id), { status });
+  // FIX: Using v8 `doc` and `update` methods.
+  await db.collection(COLLECTIONS.BUDGETS).doc(id).update({ status });
 };
