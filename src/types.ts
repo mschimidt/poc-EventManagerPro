@@ -1,4 +1,5 @@
 
+
 export interface Cost {
   id?: string;
   name: string;
@@ -25,6 +26,12 @@ export interface BudgetItem {
   name: string;
   quantity: number;
   unitCost: number; // cost defined by user per item
+}
+
+export interface DefaultItem {
+  id?: string;
+  name: string;
+  unitCost: number;
 }
 
 export interface Budget {

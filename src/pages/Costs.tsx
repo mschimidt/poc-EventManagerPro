@@ -1,14 +1,72 @@
 import React, { useEffect, useState } from 'react';
 import { 
   getCosts, addCost, deleteCost,
-  getSettings, saveSettings
+  getSettings, saveSettings,
+  getDefaultItems, addDefaultItem, deleteDefaultItem
 } from '../services/firestore';
-import { Cost, SystemSettings } from '../types';
+import { Cost, SystemSettings, DefaultItem } from '../types';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Trash2, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
+
+const DefaultItemsSection: React.FC<{
+  items: DefaultItem[];
+  onAdd: (item: Omit<DefaultItem, 'id'>) => void;
+  onDelete: (id: string) => void;
+}> = ({ items, onAdd, onDelete }) => {
+  const [newItem, setNewItem] = useState({ name: '', unitCost: '' });
+
+  const handleAdd = () => {
+    if (!newItem.name || !newItem.unitCost) return;
+    onAdd({
+      name: newItem.name,
+      unitCost: Number(newItem.unitCost)
+    });
+    setNewItem({ name: '', unitCost: '' });
+  };
+  
+  return (
+    <Card>
+      <CardHeader title="Itens Padrão para Orçamentos" />
+      <CardContent>
+        <div className="flex gap-4 mb-6 items-end flex-wrap md:flex-nowrap p-4 bg-slate-50 rounded-lg border">
+          <Input label="Nome do Item" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="flex-1 min-w-[200px]" />
+          <Input label="Custo Unit. (R$)" type="number" value={newItem.unitCost} onChange={e => setNewItem({...newItem, unitCost: e.target.value})} className="md:w-40" />
+          <Button onClick={handleAdd}>Adicionar Item</Button>
+        </div>
+        <div className="border rounded-md overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Item</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Custo Unitário</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {items.length > 0 ? items.map(item => (
+                <tr key={item.id}>
+                  <td className="px-6 py-3 text-sm text-slate-900">{item.name}</td>
+                  <td className="px-6 py-3 text-sm text-slate-900">{formatCurrency(item.unitCost)}</td>
+                  <td className="px-6 py-3 text-right w-16">
+                    <button onClick={() => onDelete(item.id!)} className="text-red-600 hover:text-red-900"><Trash2 size={16} /></button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={3} className="text-center py-4 text-slate-500">Nenhum item padrão cadastrado.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 
 const CostSection: React.FC<{
   title: string;
@@ -99,16 +157,18 @@ const CostSection: React.FC<{
 export const Costs: React.FC = () => {
   const [allCosts, setAllCosts] = useState<Cost[]>([]);
   const [settings, setSettings] = useState<SystemSettings>({ occupancyRate: 70, workingDaysPerMonth: 22 });
+  const [defaultItems, setDefaultItems] = useState<DefaultItem[]>([]);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    const [costs, st] = await Promise.all([getCosts(), getSettings()]);
+    const [costs, st, items] = await Promise.all([getCosts(), getSettings(), getDefaultItems()]);
     const sortedCosts = costs.sort((a, b) => (b.monthYear || '').localeCompare(a.monthYear || ''));
     setAllCosts(sortedCosts);
     setSettings(st);
+    setDefaultItems(items);
   };
 
   const handleAddCost = async (cost: Omit<Cost, 'id'>) => {
@@ -118,6 +178,16 @@ export const Costs: React.FC = () => {
   
   const handleDeleteCost = async (id: string) => {
     await deleteCost(id);
+    loadData();
+  };
+  
+  const handleAddDefaultItem = async (item: Omit<DefaultItem, 'id'>) => {
+    await addDefaultItem(item as DefaultItem);
+    loadData();
+  };
+
+  const handleDeleteDefaultItem = async (id: string) => {
+    await deleteDefaultItem(id);
     loadData();
   };
 
@@ -141,6 +211,8 @@ export const Costs: React.FC = () => {
         </CardContent>
       </Card>
       
+      <DefaultItemsSection items={defaultItems} onAdd={handleAddDefaultItem} onDelete={handleDeleteDefaultItem} />
+
       <CostSection title="Custos Fixos" costs={fixedCosts} type="fixed" onAdd={handleAddCost} onDelete={handleDeleteCost} />
       <CostSection title="Custos Variáveis" costs={variableCosts} type="variable" onAdd={handleAddCost} onDelete={handleDeleteCost} />
     </div>

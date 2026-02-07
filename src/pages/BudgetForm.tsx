@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  getSettings, getCosts, saveBudget, getBudgetById 
+  getSettings, getCosts, saveBudget, getBudgetById, getDefaultItems 
 } from '../services/firestore';
-import { Budget, BudgetItem, BudgetStatus, Cost } from '../types';
+import { Budget, BudgetItem, BudgetStatus, Cost, DefaultItem } from '../types';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { formatCurrency } from '../utils/format';
-import { Trash2, Plus, Calculator, Copy, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, Calculator, Copy, ChevronDown, ListPlus } from 'lucide-react';
 
 const formatPhone = (value: string) => {
   if (!value) return '';
@@ -35,6 +35,7 @@ export const BudgetForm: React.FC = () => {
   
   const [allCosts, setAllCosts] = useState<Cost[]>([]);
   const [settings, setSettings] = useState({ occupancyRate: 70, workingDaysPerMonth: 22 });
+  const [defaultItems, setDefaultItems] = useState<DefaultItem[]>([]);
   
   const [showCalcMemory, setShowCalcMemory] = useState(false);
   const [financials, setFinancials] = useState({
@@ -48,9 +49,10 @@ export const BudgetForm: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      const [all, sysSettings] = await Promise.all([getCosts(), getSettings()]);
+      const [all, sysSettings, dfltItems] = await Promise.all([getCosts(), getSettings(), getDefaultItems()]);
       setAllCosts(all);
       setSettings(sysSettings);
+      setDefaultItems(dfltItems);
 
       if (id) {
         const existing = await getBudgetById(id);
@@ -108,6 +110,20 @@ export const BudgetForm: React.FC = () => {
   };
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
+  const handleLoadDefaultItems = () => {
+    if (defaultItems.length === 0) {
+      alert("Nenhum item padrão cadastrado. Vá para 'Custos & Config' para adicioná-los.");
+      return;
+    }
+    const newItemsFromDefaults = defaultItems.map(item => ({
+      id: crypto.randomUUID(),
+      name: item.name,
+      unitCost: item.unitCost,
+      quantity: 1,
+    }));
+    setItems(prev => [...prev, ...newItemsFromDefaults]);
+  };
+
   const handleSave = async () => {
     if (!clientName || !eventName || !eventDate) {
       alert("Preencha os campos obrigatórios");
@@ -157,7 +173,15 @@ export const BudgetForm: React.FC = () => {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader title="Itens de Custo do Evento" action={<Button size="sm" onClick={addItem}><Plus size={16} className="mr-2"/>Adicionar Item</Button>} />
+            <CardHeader 
+              title="Itens de Custo do Evento" 
+              action={
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={handleLoadDefaultItems}><ListPlus size={16} className="mr-2"/>Carregar Padrão</Button>
+                  <Button size="sm" onClick={addItem}><Plus size={16} className="mr-2"/>Adicionar Item</Button>
+                </div>
+              } 
+            />
             <CardContent>
               {items.length === 0 ? <p className="text-center text-slate-500 py-4">Nenhum item.</p> : (
                 <div className="overflow-x-auto"><table className="min-w-full text-sm">
