@@ -14,11 +14,11 @@ interface BarChartProps {
 
 export const BarChart: React.FC<BarChartProps> = ({ data }) => {
   const maxValue = Math.max(...data.datasets.flatMap(ds => ds.data));
-  const scale = maxValue > 0 ? maxValue * 1.2 : 1; // Add 20% buffer
+  const scale = maxValue > 0 ? maxValue * 1.2 : 1; // Adiciona 20% de buffer
 
   return (
-    <div className="h-64 space-y-4">
-      <div className="flex h-full w-full gap-4 items-end">
+    <div className="h-64 flex flex-col">
+      <div className="flex-1 flex w-full gap-4 items-end">
         {data.labels.map((label, index) => (
           <div key={label} className="flex-1 flex flex-col items-center h-full">
             <div className="flex-1 w-full flex items-end justify-center gap-1">
@@ -38,7 +38,7 @@ export const BarChart: React.FC<BarChartProps> = ({ data }) => {
           </div>
         ))}
       </div>
-      <div className="flex justify-center gap-4 text-sm">
+      <div className="flex justify-center gap-4 text-sm pt-4">
         {data.datasets.map(dataset => (
           <div key={dataset.label} className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: dataset.color }}></span>
