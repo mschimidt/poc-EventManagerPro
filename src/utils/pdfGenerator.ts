@@ -6,59 +6,117 @@ import { formatCurrency, formatDate } from './format';
 export const generateBudgetPDF = (budget: Budget) => {
   const doc = new jsPDF();
 
-  // Header
-  doc.setFontSize(20);
-  doc.setTextColor(40, 40, 40);
-  doc.text('Proposta de Orçamento', 105, 20, { align: 'center' });
-  
+  // Configuração de Cores
+  const colorPrimary = [79, 70, 229]; // Indigo
+  const colorDark = [40, 40, 40];     // Cinza Escuro
+  const colorLight = [100, 100, 100]; // Cinza Claro
+
+  // --- CABEÇALHO ---
+  // Faixa lateral decorativa (opcional, dá um toque moderno)
+  doc.setFillColor(colorPrimary[0], colorPrimary[1], colorPrimary[2]);
+  doc.rect(0, 0, 8, 297, 'F'); // Linha vertical na margem esquerda
+
+  // Título Principal em Negrito
+  doc.setFontSize(24);
+  doc.setTextColor(colorDark[0], colorDark[1], colorDark[2]);
+  doc.setFont('helvetica', 'bold'); // Negrito
+  doc.text('ORÇAMENTO DO EVENTO', 20, 25);
+
+  // Subtítulo / Data
   doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 105, 26, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(colorLight[0], colorLight[1], colorLight[2]);
+  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 32);
 
-  // Client Info
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Cliente: ${budget.clientName}`, 14, 40);
-  doc.text(`Telefone: ${budget.clientPhone}`, 14, 46);
-  doc.text(`Evento: ${budget.eventName}`, 14, 52);
-  doc.text(`Data do Evento: ${formatDate(budget.eventDate)}`, 14, 58);
-  doc.text(`Convidados: ${budget.guestCount || 0} pessoas`, 14, 64);
+  // --- DADOS DO EVENTO (Ordem Solicitada) ---
+  let currentY = 55;
+  const labelX = 20;
+  const valueX = 60; // Alinhamento dos valores
+  const lineHeight = 8;
 
-  // Table Data (Items)
-  // Simplified view: Only Item Name and Quantity
+  // Função auxiliar para desenhar linhas: Rótulo em Negrito + Valor Normal
+  const drawInfoRow = (label: string, value: string | number) => {
+    // Rótulo (Negrito)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(colorDark[0], colorDark[1], colorDark[2]);
+    doc.text(label, labelX, currentY);
+
+    // Valor
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.text(String(value), valueX, currentY);
+
+    currentY += lineHeight;
+  };
+
+  // 1. Cliente
+  drawInfoRow('Cliente:', budget.clientName);
+
+  // 2. Festa (Evento)
+  drawInfoRow('Festa:', budget.eventName);
+
+  // 3. Telefone
+  drawInfoRow('Telefone:', budget.clientPhone);
+
+  // 4. Data do Evento
+  drawInfoRow('Data do Evento:', formatDate(budget.eventDate));
+
+  // 5. Convidados
+  drawInfoRow('Convidados:', `${budget.guestCount || 0} pessoas`);
+
+  // --- TABELA DE ITENS ---
+  // Espaço antes da tabela
+  const tableStartY = currentY + 10;
+
   const tableBody = budget.items.map(item => [
     item.name,
     item.quantity
   ]);
 
   autoTable(doc, {
-    startY: 75,
-    head: [['Item', 'Qtd']],
+    startY: tableStartY,
+    head: [['DESCRIÇÃO DO ITEM', 'QTD']],
     body: tableBody,
-    theme: 'striped',
-    headStyles: { fillColor: [79, 70, 229] }, // Indigo
-    styles: { fontSize: 10 },
-    columnStyles: {
-      0: { halign: 'left' }, // Item name alignment
-      1: { halign: 'center', cellWidth: 30 } // Quantity alignment and width
+    theme: 'grid',
+    styles: {
+      fontSize: 10,
+      font: 'helvetica',
+      cellPadding: 4,
+      textColor: [50, 50, 50]
     },
-    // Footer with Total
-    foot: [['Total Geral', formatCurrency(budget.totalSales)]],
-    footStyles: { 
-      fillColor: [240, 240, 240], 
-      textColor: [0, 0, 0], 
+    headStyles: {
+      fillColor: colorPrimary,
+      textColor: [255, 255, 255],
       fontStyle: 'bold',
-      halign: 'right' // Align text to right to match the currency column visual
-    }
+      halign: 'left'
+    },
+    columnStyles: {
+      0: { halign: 'left' },
+      1: { halign: 'center', cellWidth: 25 }
+    },
+    // Rodapé da Tabela com Total
+    foot: [['TOTAL GERAL', formatCurrency(budget.totalSales)]],
+    footStyles: {
+      fillColor: [245, 245, 245], // Cinza muito claro
+      textColor: colorDark,
+      fontStyle: 'bold',
+      halign: 'right',
+      fontSize: 12
+    },
+    margin: { left: 20, right: 14 } // Ajuste da margem esquerda para alinhar com o texto
   });
 
-  // Footer
+  // --- RODAPÉ ---
   const finalY = (doc as any).lastAutoTable.finalY || 150;
+
+  doc.setFontSize(9);
+  doc.setTextColor(colorLight[0], colorLight[1], colorLight[2]);
+  doc.setFont('helvetica', 'normal');
   
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text('Validade da proposta: 15 dias.', 14, finalY + 15);
-  doc.text('Agradecemos a preferência!', 14, finalY + 20);
+  // Texto de validade e agradecimento
+  doc.text('Validade da proposta: 15 dias.', 20, finalY + 15);
+  doc.text('Agradecemos a preferência!', 20, finalY + 20);
 
   // Save
   doc.save(`Orcamento_${budget.clientName.replace(/\s/g, '_')}_${budget.eventDate}.pdf`);
