@@ -8,41 +8,35 @@ export const generateBudgetPDF = (budget: Budget) => {
 
   // Configuração de Cores
   const colorPrimary = [79, 70, 229]; // Indigo
-  const colorDark = [40, 40, 40];     // Cinza Escuro
-  const colorLight = [100, 100, 100]; // Cinza Claro
+  const colorDark = [40, 40, 40];     
+  const colorLight = [100, 100, 100]; 
 
   // --- CABEÇALHO ---
-  // Faixa lateral decorativa (opcional, dá um toque moderno)
   doc.setFillColor(colorPrimary[0], colorPrimary[1], colorPrimary[2]);
-  doc.rect(0, 0, 8, 297, 'F'); // Linha vertical na margem esquerda
+  doc.rect(0, 0, 8, 297, 'F'); 
 
-  // Título Principal em Negrito
   doc.setFontSize(24);
   doc.setTextColor(colorDark[0], colorDark[1], colorDark[2]);
-  doc.setFont('helvetica', 'bold'); // Negrito
-  doc.text('ORÇAMENTO DO EVENTO', 20, 25);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ORÇAMENTO DE EVENTO', 20, 25);
 
-  // Subtítulo / Data
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(colorLight[0], colorLight[1], colorLight[2]);
   doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 32);
 
-  // --- DADOS DO EVENTO (Ordem Solicitada) ---
+  // --- DADOS DO EVENTO ---
   let currentY = 55;
   const labelX = 20;
-  const valueX = 60; // Alinhamento dos valores
+  const valueX = 60; 
   const lineHeight = 8;
 
-  // Função auxiliar para desenhar linhas: Rótulo em Negrito + Valor Normal
   const drawInfoRow = (label: string, value: string | number) => {
-    // Rótulo (Negrito)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(colorDark[0], colorDark[1], colorDark[2]);
     doc.text(label, labelX, currentY);
 
-    // Valor
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
     doc.text(String(value), valueX, currentY);
@@ -50,23 +44,13 @@ export const generateBudgetPDF = (budget: Budget) => {
     currentY += lineHeight;
   };
 
-  // 1. Cliente
   drawInfoRow('Cliente:', budget.clientName);
-
-  // 2. Festa (Evento)
   drawInfoRow('Festa:', budget.eventName);
-
-  // 3. Telefone
   drawInfoRow('Telefone:', budget.clientPhone);
-
-  // 4. Data do Evento
   drawInfoRow('Data do Evento:', formatDate(budget.eventDate));
-
-  // 5. Convidados
   drawInfoRow('Convidados:', `${budget.guestCount || 0} pessoas`);
 
   // --- TABELA DE ITENS ---
-  // Espaço antes da tabela
   const tableStartY = currentY + 10;
 
   const tableBody = budget.items.map(item => [
@@ -91,20 +75,22 @@ export const generateBudgetPDF = (budget: Budget) => {
       fontStyle: 'bold',
       halign: 'left'
     },
+    // --- CORREÇÃO AQUI ---
     columnStyles: {
       0: { halign: 'left' },
-      1: { halign: 'center', cellWidth: 25 }
+      // Aumentei o cellWidth para 40 (era 25/30) para caber "R$ 0.000,00" sem quebrar
+      1: { halign: 'center', cellWidth: 40 } 
     },
-    // Rodapé da Tabela com Total
+    
     foot: [['TOTAL GERAL', formatCurrency(budget.totalSales)]],
     footStyles: {
-      fillColor: [245, 245, 245], // Cinza muito claro
+      fillColor: [245, 245, 245],
       textColor: colorDark,
       fontStyle: 'bold',
-      halign: 'right',
+      halign: 'right', // Alinha tanto o texto "Total" quanto o Valor à direita
       fontSize: 12
     },
-    margin: { left: 20, right: 14 } // Ajuste da margem esquerda para alinhar com o texto
+    margin: { left: 20, right: 14 }
   });
 
   // --- RODAPÉ ---
@@ -114,10 +100,8 @@ export const generateBudgetPDF = (budget: Budget) => {
   doc.setTextColor(colorLight[0], colorLight[1], colorLight[2]);
   doc.setFont('helvetica', 'normal');
   
-  // Texto de validade e agradecimento
   doc.text('Validade da proposta: 15 dias.', 20, finalY + 15);
   doc.text('Agradecemos a preferência!', 20, finalY + 20);
 
-  // Save
   doc.save(`Orcamento_${budget.clientName.replace(/\s/g, '_')}_${budget.eventDate}.pdf`);
 };
